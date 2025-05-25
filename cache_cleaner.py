@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 from server import PromptServer
+from comfy.comfy_types.node_typing import IO
 import json
 
 class CacheCleaner:
@@ -11,19 +12,20 @@ class CacheCleaner:
                 "clean_cache": ("BOOLEAN", {"default": True}),
             },
             "optional": {
-                "image_pass": ("IMAGE",),
-                "model_pass": ("MODEL",),
+                "anything": (IO.ANY, {}),
+                "image_pass": ("IMAGE",{}),
+                "model_pass": ("MODEL",{}),
             }
         }
     
-    RETURN_TYPES = ("IMAGE", "MODEL", "STRING",)
-    RETURN_NAMES = ("image_pass", "model_pass", "status")
+    RETURN_TYPES = (IO.ANY,"IMAGE", "MODEL", "STRING",)
+    RETURN_NAMES = ("anything","image_pass", "model_pass", "status")
     FUNCTION = "clean_cache"
     CATEGORY = "utils/system"
     DESCRIPTION = """Calls the ComfyUI API to free model and node cache. 
 Returns the inputs unchanged and provides API call status."""
 
-    async def _call_api(self):
+    async def _call_api(self,address):
         headers = {'Content-Type': 'application/json'}
         payload = {
             "unload_models": True,
@@ -31,12 +33,12 @@ Returns the inputs unchanged and provides API call status."""
         }
         
         async with aiohttp.ClientSession() as session:
-            async with session.post("http://127.0.0.1:8188/api/free", 
+            async with session.post(f"http://{address.replace('0.0.0.0','127.0.0.1')}/api/free", 
                                   headers=headers, 
                                   json=payload) as response:
                 return response.status
 
-    def clean_cache(self, clean_cache, image_pass=None, model_pass=None):
+    def clean_cache(self, clean_cache,anything=None, image_pass=None, model_pass=None):
         status = "Cache cleaning skipped"
         
         if clean_cache:
@@ -47,8 +49,8 @@ Returns the inputs unchanged and provides API call status."""
                 except RuntimeError:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                
-                status_code = loop.run_until_complete(self._call_api())
+                address=f"{PromptServer.instance.address}:{PromptServer.instance.port}"
+                status_code = loop.run_until_complete(self._call_api(address))
                 
                 if status_code == 200:
                     status = "Cache cleaned successfully"
@@ -57,10 +59,10 @@ Returns the inputs unchanged and provides API call status."""
             except Exception as e:
                 status = f"Error: Failed to call API - {str(e)}"
                 print(f"CacheCleaner Error: {str(e)}")
-        
+        status = f"Status:{status}\nServer address:{address}"
         print(f"CacheCleaner: {status}")
         
-        return (image_pass, model_pass, status)
+        return (anything,image_pass, model_pass, status)
 
 NODE_CLASS_MAPPINGS = {
     "CacheCleaner": CacheCleaner

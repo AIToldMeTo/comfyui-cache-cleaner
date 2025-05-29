@@ -1,0 +1,14 @@
+[project]
+name = "cache-cleaner"
+description = "A custom node for ComfyUI that provides the ability to clear the cache directly from your workflow."
+version = "1.0.0"
+license = {file = "LICENSE"}
+
+[project.urls]
+Repository = "https://github.com/AIToldMeTo/comfyui-cache-cleaner"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "aitoldmeto"
+DisplayName = "comfyui-cache-cleaner"
+Icon = ""

@@ -9,6 +9,6 @@ Repository = "https://github.com/AIToldMeTo/comfyui-cache-cleaner"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = ""
+PublisherId = "aitoldmeto"
 DisplayName = "comfyui-cache-cleaner"
 Icon = ""

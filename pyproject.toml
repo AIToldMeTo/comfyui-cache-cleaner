@@ -1,7 +1,7 @@
 [project]
 name = "cache-cleaner"
 description = "A custom node for ComfyUI that provides the ability to clear the cache directly from your workflow."
-version = "1.0.0"
+version = "1.0.1"
 license = {file = "LICENSE"}
 
 [project.urls]

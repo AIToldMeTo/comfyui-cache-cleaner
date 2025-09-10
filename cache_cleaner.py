@@ -1,5 +1,4 @@
-import aiohttp
-import asyncio
+import requests
 from server import PromptServer
 from comfy.comfy_types.node_typing import IO
 import json
@@ -25,32 +24,31 @@ class CacheCleaner:
     DESCRIPTION = """Calls the ComfyUI API to free model and node cache. 
 Returns the inputs unchanged and provides API call status."""
 
-    async def _call_api(self,address):
+    def _call_api(self, address):
         headers = {'Content-Type': 'application/json'}
         payload = {
             "unload_models": True,
             "free_memory": True
         }
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"http://{address.replace('0.0.0.0','127.0.0.1')}/api/free", 
-                                  headers=headers, 
-                                  json=payload) as response:
-                return response.status
+        try:
+            response = requests.post(
+                f"http://{address.replace('0.0.0.0','127.0.0.1')}/api/free", 
+                headers=headers, 
+                json=payload,
+                timeout=10
+            )
+            return response.status_code
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request failed: {str(e)}")
 
-    def clean_cache(self, clean_cache,anything=None, image_pass=None, model_pass=None):
+    def clean_cache(self, clean_cache, anything=None, image_pass=None, model_pass=None):
         status = "Cache cleaning skipped"
+        address = f"{PromptServer.instance.address}:{PromptServer.instance.port}"
         
         if clean_cache:
             try:
-                # Create event loop for async call if one doesn't exist
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                address=f"{PromptServer.instance.address}:{PromptServer.instance.port}"
-                status_code = loop.run_until_complete(self._call_api(address))
+                status_code = self._call_api(address)
                 
                 if status_code == 200:
                     status = "Cache cleaned successfully"
@@ -59,10 +57,11 @@ Returns the inputs unchanged and provides API call status."""
             except Exception as e:
                 status = f"Error: Failed to call API - {str(e)}"
                 print(f"CacheCleaner Error: {str(e)}")
-        status = f"Status:{status}\nServer address:{address}"
+        
+        status = f"Status: {status}\nServer address: {address}"
         print(f"CacheCleaner: {status}")
         
-        return (anything,image_pass, model_pass, status)
+        return (anything, image_pass, model_pass, status)
 
 NODE_CLASS_MAPPINGS = {
     "CacheCleaner": CacheCleaner
